@@ -1,4 +1,4 @@
-$ # Use the official Node.js image from the Docker Hub
+# Use the official Node.js image from the Docker Hub
 FROM node:18
 
 # Set the working directory inside the container
@@ -16,6 +16,6 @@ COPY . .
 # Expose the port your application will run on
 EXPOSE 3000
 
-RUN ls -R /app
 # Define the command to run your application
 CMD ["node", "./src/index.js"]
+
