@@ -41,6 +41,16 @@ pipeline {
                 sh 'zip -r my-node-app.zip .'
             }
         }
+        stage('Upload to S3') {
+            steps {
+                script {
+                    def s3Upload = sh(script: "aws s3 cp app.zip s3://${S3_BUCKET}/app.zip", returnStatus: true)
+                    if (s3Upload != 0) {
+                        error "Failed to upload to S3"
+                    }
+                }
+            }
+        }
     }
 
     post {
