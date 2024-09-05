@@ -41,27 +41,6 @@ pipeline {
                 sh 'zip -r my-node-app.zip .'
             }
         }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    // Deploy using AWS CodeDeploy or other methods
-                    awsCodeDeploy(
-                        applicationName: 'mynodeapp',
-                        deploymentGroupName: 'YourDeploymentGroup',
-                        deploymentConfigName: 'CodeDeployDefault.AllAtOnce',
-                        description: 'Deploying new version',
-                        revision: [
-                            revisionType: 'GitHub',
-                            gitHubLocation: [
-                                repository: 'https://github.com/Sudarshanas232001/docker-nodejs-sample/mynodeapp.git',
-                                commitId: 'latest'
-                            ]
-                        ]
-                    )
-                }
-            }
-        }
     }
 
     post {
