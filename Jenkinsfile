@@ -51,7 +51,18 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            steps {
+                script {
+                    def deploy = sh(script: "aws deploy create-deployment --application-name ${APPLICATION_NAME} --deployment-group-name ${DEPLOYMENT_GROUP} --s3-location bucket=${S3_BUCKET},key=app.zip,bundleType=zip", returnStatus: true)
+                    if (deploy != 0) {
+                        error "Failed to create deployment"
+                    }
+                }
+            }
+        }
     }
+ }
 
     post {
         always {
