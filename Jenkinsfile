@@ -2,72 +2,69 @@ pipeline {
     agent any
 
     environment {
-        NODE_ENV = 'production'
+        AWS_REGION = 'us-east-1' // Set your AWS region
+        S3_BUCKET = 'my-node-appbucket' // Replace with your S3 bucket name
+        CODEDEPLOY_APPLICATION_NAME = 'NodeJsApp' // Replace with your CodeDeploy application name
+        CODEDEPLOY_DEPLOYMENT_GROUP_NAME = 'YourDeploymentGroup' // Replace with your CodeDeploy deployment group name
+        DEPLOYMENT_PACKAGE = 'nodejs-app.zip'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the source code from the repository
-                git 'https://github.com/Sudarshanas232001/docker-nodejs-sample/mynodeapp.git'
+                // Clone the repository
+                git 'https://github.com/Sudarshanas232001/docker-nodejs-sample'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                // Install Node.js dependencies
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                // Run tests
-                sh 'npm test'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                // Perform build tasks if any, like transpiling code
-                sh 'npm run build'
-            }
-        }
-
-        stage('Package') {
-            steps {
-                // Package the application, if needed
-                // For example, you might zip the build artifacts
-                sh 'zip -r my-node-app.zip .'
-            }
-        }
-        stage('Upload to S3') {
-            steps {
                 script {
-                    def s3Upload = sh(script: "aws s3 cp app.zip s3://${S3_BUCKET}/app.zip", returnStatus: true)
-                    if (s3Upload != 0) {
-                        error "Failed to upload to S3"
-                    }
+                    // Install Node.js dependencies
+                    sh 'npm install'
                 }
             }
         }
-        stage('Deploy') {
+
+        stage('Package Application') {
             steps {
                 script {
-                    def deploy = sh(script: "aws deploy create-deployment --application-name ${APPLICATION_NAME} --deployment-group-name ${DEPLOYMENT_GROUP} --s3-location bucket=${S3_BUCKET},key=app.zip,bundleType=zip", returnStatus: true)
-                    if (deploy != 0) {
-                        error "Failed to create deployment"
-                    }
+                    // Create a zip file of the application
+                    sh "zip -r ${DEPLOYMENT_PACKAGE} . -x '*.git*' -x 'scripts/*'"
+                }
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                script {
+                    // Upload the zip file to S3
+                    sh "aws s3 cp ${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
+                }
+            }
+        }
+
+        stage('Deploy to CodeDeploy') {
+            steps {
+                script {
+                    // Trigger a deployment with CodeDeploy
+                    sh """
+                    aws deploy create-deployment \
+                        --application-name ${CODEDEPLOY_APPLICATION_NAME} \
+                        --deployment-group-name ${CODEDEPLOY_DEPLOYMENT_GROUP_NAME} \
+                        --s3-location bucket=${S3_BUCKET},key=${DEPLOYMENT_PACKAGE},bundleType=zip
+                    """
                 }
             }
         }
     }
- }
 
     post {
-        always {
-            // Clean up or notify upon completion
-            sh 'rm -rf my-node-app.zip'
+        success {
+            echo 'Deployment completed successfully'
+        }
+        failure {
+            echo 'Deployment failed'
         }
     }
 }
