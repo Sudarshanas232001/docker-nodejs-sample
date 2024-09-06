@@ -2,24 +2,27 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1' // Set your AWS region
-        S3_BUCKET = 'my-node-appbucket' // Replace with your S3 bucket name
-        BUILD_DIR = 'build' // Directory to hold build artifacts
+        AWS_REGION = 'us-east-1'
+        S3_BUCKET = 'my-node-appbucket'
+        BUILD_DIR = 'build'
         DEPLOYMENT_PACKAGE = 'nodejs-app.zip'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from GitHub
-                git 'https://github.com/Sudarshanas232001/docker-nodejs-sample.git'
+                script {
+                    // Use the GitHub credentials for checkout
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
+                              userRemoteConfigs: [[url: 'https://github.com/Sudarshanas232001/docker-nodejs-sample.git', 
+                              credentialsId: 'github-access-token']]])
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Install Node.js dependencies
                     sh 'npm install'
                 }
             }
@@ -28,19 +31,10 @@ pipeline {
         stage('Build Application') {
             steps {
                 script {
-                    // Run the build script (if any)
                     sh 'npm run build'
-
-                    // Clean up any old build artifacts
                     sh "rm -rf ${BUILD_DIR}"
-                    
-                    // Create the build directory
                     sh "mkdir -p ${BUILD_DIR}"
-                    
-                    // Package the application into a zip file
-                    sh "zip -r ${DEPLOYMENT_PACKAGE} . -x '*.git*' -x 'node_modules/*' -x '${BUILD_DIR}/*'"
-                    
-                    // Move the zip file to the build directory
+                    sh "zip -r ${DEPLOYMENT_PACKAGE} . -x '.git' -x 'node_modules/' -x '${BUILD_DIR}/'"
                     sh "mv ${DEPLOYMENT_PACKAGE} ${BUILD_DIR}/"
                 }
             }
@@ -48,9 +42,8 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                withAWS(region: AWS_REGION, credentials: 'aws-credentials-id') { // Replace 'aws-credentials-id' with your Jenkins AWS credentials ID
+                withAWS(region: AWS_REGION, credentials: 'aws-credentials-id') {
                     script {
-                        // Upload the zip file to S3
                         sh "aws s3 cp ${BUILD_DIR}/${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
                     }
                 }
