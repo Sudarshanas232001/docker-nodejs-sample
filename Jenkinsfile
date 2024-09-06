@@ -32,7 +32,7 @@ pipeline {
             steps {
                 script {
                     // Define the ZIP file name and build directory
-                    def zipFileName = 'app.zip'
+                    def zipFileName = 'nodejs-app.zip'
                     def buildDir = 'build'
 
                     // Remove any existing build directory and create a new one
