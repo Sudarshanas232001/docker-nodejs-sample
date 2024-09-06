@@ -31,11 +31,19 @@ pipeline {
         stage('Build Application') {
             steps {
                 script {
-                    sh 'npm run build'
-                    sh "rm -rf ${BUILD_DIR}"
-                    sh "mkdir -p ${BUILD_DIR}"
-                    sh "zip -r ${DEPLOYMENT_PACKAGE} . -x '.git' -x 'node_modules/' -x '${BUILD_DIR}/'"
-                    sh "mv ${DEPLOYMENT_PACKAGE} ${BUILD_DIR}/"
+                    // Define the ZIP file name and build directory
+                    def zipFileName = 'app.zip'
+                    def buildDir = 'build'
+
+                    // Remove any existing build directory and create a new one
+                    sh "rm -rf ${buildDir}"
+                    sh "mkdir -p ${buildDir}"
+
+                    // Zip the application files excluding .git, node_modules, and the build directory
+                    sh "zip -r ${zipFileName} . -x '*.git/*' -x 'node_modules/*' -x '${buildDir}/*'"
+
+                    // Move the ZIP file to the build directory
+                    sh "mv ${zipFileName} ${buildDir}/"
                 }
             }
         }
