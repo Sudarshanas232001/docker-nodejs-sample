@@ -29,8 +29,10 @@ pipeline {
             steps {
                 script {
                     // Run the build script (if any)
-                    // Assuming your build command is 'npm run build'
                     sh 'npm run build'
+
+                    // Clean up any old build artifacts
+                    sh "rm -rf ${BUILD_DIR}"
                     
                     // Create the build directory
                     sh "mkdir -p ${BUILD_DIR}"
@@ -46,9 +48,11 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                script {
-                    // Upload the zip file to S3
-                    sh "aws s3 cp ${BUILD_DIR}/${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
+                withAWS(region: AWS_REGION, credentials: 'aws-credentials-id') { // Replace 'aws-credentials-id' with your Jenkins AWS credentials ID
+                    script {
+                        // Upload the zip file to S3
+                        sh "aws s3 cp ${BUILD_DIR}/${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
+                    }
                 }
             }
         }
