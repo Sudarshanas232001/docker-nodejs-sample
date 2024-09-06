@@ -50,8 +50,12 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                withAWS(region: AWS_REGION, credentials: 'aws-credentials-id') {
+                withAWS(region: AWS_REGION, credentials: 'cfbe332e-6e2d-4b2c-b788-d922b36c9852') {
                     script {
+                            echo "AWS_REGION=${AWS_REGION}"
+                            echo "BUILD_DIR=${BUILD_DIR}"
+                            echo "DEPLOYMENT_PACKAGE=${DEPLOYMENT_PACKAGE}"
+                            echo "S3_BUCKET=${S3_BUCKET}"
                         sh "aws s3 cp ${BUILD_DIR}/${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
                     }
                 }
