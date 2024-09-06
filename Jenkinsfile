@@ -65,7 +65,7 @@ pipeline {
 
     post {
         success {
-            echo 'Build and upload completed successful ly'
+            echo 'Build and upload completed successfullly'
         }
         failure {
             echo 'Build or upload failed'
