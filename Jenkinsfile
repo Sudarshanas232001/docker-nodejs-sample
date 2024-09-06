@@ -6,13 +6,14 @@ pipeline {
         S3_BUCKET = 'my-node-appbucket'
         BUILD_DIR = 'build'
         DEPLOYMENT_PACKAGE = 'nodejs-app.zip'
+        CODEDEPLOY_APPLICATION = 'NodejsApp'
+        CODEDEPLOY_DEPLOYMENT_GROUP = 'my-deployment-group'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    // Use the GitHub credentials for checkout
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']], 
                               userRemoteConfigs: [[url: 'https://github.com/Sudarshanas232001/docker-nodejs-sample.git', 
                               credentialsId: 'github-access-token']]])
@@ -31,18 +32,12 @@ pipeline {
         stage('Build Application') {
             steps {
                 script {
-                    // Define the ZIP file name and build directory
                     def zipFileName = 'nodejs-app.zip'
                     def buildDir = 'build'
 
-                    // Remove any existing build directory and create a new one
                     sh "rm -rf ${buildDir}"
                     sh "mkdir -p ${buildDir}"
-
-                    // Zip the application files excluding .git, node_modules, and the build directory
                     sh "zip -r ${zipFileName} . -x '*.git/*' -x 'node_modules/*' -x '${buildDir}/*'"
-
-                    // Move the ZIP file to the build directory
                     sh "mv ${zipFileName} ${buildDir}/"
                 }
             }
@@ -52,11 +47,24 @@ pipeline {
             steps {
                 withAWS(region: AWS_REGION, credentials: 'cfbe332e-6e2d-4b2c-b788-d922b36c9852') {
                     script {
-                            echo "AWS_REGION=${AWS_REGION}"
-                            echo "BUILD_DIR=${BUILD_DIR}"
-                            echo "DEPLOYMENT_PACKAGE=${DEPLOYMENT_PACKAGE}"
-                            echo "S3_BUCKET=${S3_BUCKET}"
                         sh "aws s3 cp ${BUILD_DIR}/${DEPLOYMENT_PACKAGE} s3://${S3_BUCKET}/${DEPLOYMENT_PACKAGE}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EC2 with CodeDeploy') {
+            steps {
+                withAWS(region: AWS_REGION, credentials: 'cfbe332e-6e2d-4b2c-b788-d922b36c9852') {
+                    script {
+                        sh """
+                        aws deploy create-deployment \
+                            --application-name ${CODEDEPLOY_APPLICATION} \
+                            --deployment-group-name ${CODEDEPLOY_DEPLOYMENT_GROUP} \
+                            --s3-location bucket=${S3_BUCKET},key=${DEPLOYMENT_PACKAGE},bundleType=zip \
+                            --deployment-config-name CodeDeployDefault.AllAtOnce \
+                            --description "Deployment triggered by Jenkins"
+                        """
                     }
                 }
             }
@@ -65,10 +73,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build and upload completed successfuly'
+            echo 'Build and deployment completed successfully'
         }
         failure {
-            echo 'Build or upload failed'
+            echo 'Build or deployment failed'
         }
     }
 }
