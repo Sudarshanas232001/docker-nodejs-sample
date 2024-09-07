@@ -29,14 +29,20 @@ pipeline {
             }
         }
 
-        stage('Build Application') {
+        stage('Prepare Deployment Package') {
             steps {
                 script {
                     def zipFileName = 'nodejs-app.zip'
                     def buildDir = 'build'
+                    
+                    // Ensure scripts are executable
+                    sh 'chmod +x scripts/*.sh'
 
+                    // Clean up and prepare build directory
                     sh "rm -rf ${buildDir}"
                     sh "mkdir -p ${buildDir}"
+
+                    // Package application
                     sh "zip -r ${zipFileName} . -x '*.git/*' -x 'node_modules/*' -x '${buildDir}/*'"
                     sh "mv ${zipFileName} ${buildDir}/"
                 }
